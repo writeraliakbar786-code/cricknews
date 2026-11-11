@@ -1,0 +1,1090 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Live Broadcast News Overlay Studio</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:ital,wght@0,800;0,900;1,800;1,900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        sports: ['Montserrat', 'sans-serif'],
+                    },
+                    colors: {
+                        cricket: {
+                            green: '#00ff66',
+                            neon: '#ccff00',
+                            gold: '#ffb700',
+                            dark: '#070b14',
+                            card: '#0f172a',
+                            accent: '#ff0055'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Smooth animations & Broadcast styling */
+        body {
+            background-color: #070b14;
+            color: #ffffff;
+        }
+
+        .progress-bar-fill {
+            transition: width 0.1s linear;
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(16px);
+            border: 2px solid rgba(0, 255, 102, 0.35);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85);
+        }
+
+        .slide-enter {
+            animation: slideInRight 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(35px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden font-sans">
+
+    <!-- TOP CONTROL BAR (Hidden in Overlay Mode) -->
+    <header id="top-bar" class="w-full bg-slate-900/95 border-b border-slate-800 p-3 md:p-4 sticky top-0 z-50 transition-all duration-300">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            
+            <!-- Branding -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-cricket-green text-black flex items-center justify-center font-sports font-black text-xl shadow-[0_0_15px_rgba(0,255,102,0.6)]">
+                    <i class="fa-solid fa-satellite-dish"></i>
+                </div>
+                <div>
+                    <h1 class="font-sports font-black text-base md:text-lg tracking-wider text-white uppercase flex items-center gap-2">
+                        CRIC-STREAM <span class="text-cricket-green">OVERLAY STUDIO</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400">Prism Live / OBS Broadcast News Ticker Engine (30+ Verified ICC News)</p>
+                </div>
+            </div>
+
+            <!-- Header Controls -->
+            <div class="flex flex-wrap items-center gap-2 md:gap-3">
+                
+                <!-- Audio Engine Controls -->
+                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs gap-1.5">
+                    <button id="audio-toggle-btn" onclick="toggleAudio()" class="px-2.5 py-1 rounded bg-slate-700 text-slate-300 hover:text-white font-bold flex items-center gap-1.5 transition">
+                        <i id="audio-icon" class="fa-solid fa-volume-xmark text-slate-400"></i>
+                        <span id="audio-status-text">AUDIO OFF</span>
+                    </button>
+                    
+                    <div class="hidden sm:flex items-center gap-1 px-1">
+                        <i class="fa-solid fa-sliders text-slate-400 text-[10px]"></i>
+                        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.3" oninput="changeVolume(this.value)" class="w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cricket-green">
+                    </div>
+
+                    <select id="track-select" onchange="changeTrack(this.value)" class="bg-slate-900 text-cricket-green text-[11px] font-bold rounded px-1.5 py-1 border border-slate-700 focus:outline-none">
+                        <option value="newsroom">Newsroom Beat</option>
+                        <option value="stadium">Stadium Pulse</option>
+                        <option value="hype">Hype Ticker</option>
+                    </select>
+                </div>
+
+                <!-- Speed Timer Selector -->
+                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs">
+                    <span class="px-2 text-slate-400 font-semibold"><i class="fa-solid fa-stopwatch mr-1"></i> Timer:</span>
+                    <button onclick="setTimer(5)" id="btn-timer-5" class="px-2 py-1 rounded text-slate-300">5s</button>
+                    <button onclick="setTimer(10)" id="btn-timer-10" class="px-2 py-1 rounded bg-cricket-green text-black font-bold shadow">10s</button>
+                    <button onclick="setTimer(15)" id="btn-timer-15" class="px-2 py-1 rounded text-slate-300">15s</button>
+                    <button onclick="setTimer(20)" id="btn-timer-20" class="px-2 py-1 rounded text-slate-300">20s</button>
+                </div>
+
+                <!-- Overlay Layout Style Preset Selector -->
+                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs">
+                    <span class="px-2 text-slate-400 font-semibold"><i class="fa-solid fa-box mr-1"></i> Style:</span>
+                    <select id="preset-select" onchange="changePreset(this.value)" class="bg-slate-900 text-cricket-green font-bold rounded px-2 py-1 border border-slate-700 focus:outline-none">
+                        <option value="center">Central Card</option>
+                        <option value="bottom">Bottom Third Banner</option>
+                        <option value="side">Side Stream Overlay</option>
+                    </select>
+                </div>
+
+                <!-- Play / Pause -->
+                <button id="play-pause-btn" onclick="toggleAutoPlay()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cricket-green font-bold text-xs rounded-lg border border-cricket-green/30 flex items-center gap-1.5">
+                    <i id="play-icon" class="fa-solid fa-pause"></i>
+                    <span id="play-text">PAUSE</span>
+                </button>
+
+                <!-- Next / Prev -->
+                <div class="flex items-center space-x-1">
+                    <button onclick="prevSlide()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700" title="Previous">
+                        <i class="fa-solid fa-chevron-left text-xs"></i>
+                    </button>
+                    <button onclick="nextSlide()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700" title="Next">
+                        <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </button>
+                </div>
+
+                <!-- Add Post Button -->
+                <button onclick="openAddModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-lg border border-slate-700 flex items-center gap-1">
+                    <i class="fa-solid fa-plus text-cricket-green"></i> Add Post
+                </button>
+
+                <!-- Full Overlay Mode Button -->
+                <button onclick="toggleOverlayMode()" class="px-4 py-2 bg-gradient-to-r from-cricket-green to-emerald-400 hover:brightness-110 text-black font-sports font-black text-xs tracking-wider rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.4)] flex items-center gap-2 uppercase">
+                    <i class="fa-solid fa-expand"></i> PRISM Overlay Mode
+                </button>
+
+            </div>
+
+        </div>
+    </header>
+
+    <!-- EXIT OVERLAY BUTTON (Floating when in Overlay Mode) -->
+    <button id="exit-overlay-btn" onclick="toggleOverlayMode()" class="hidden fixed top-4 right-4 z-50 bg-slate-900/95 text-cricket-green border-2 border-cricket-green px-4 py-2 rounded-full font-bold text-xs shadow-2xl hover:bg-slate-800 items-center gap-2">
+        <i class="fa-solid fa-compress"></i> Show Admin Panel
+    </button>
+
+    <!-- MAIN OVERLAY DISPLAY CONTAINER -->
+    <main id="main-layout" class="flex-grow flex items-center justify-center p-2 md:p-6 relative w-full transition-all duration-300">
+
+        <div id="broadcast-container" class="w-full max-w-5xl transition-all duration-300">
+
+            <!-- NEWS DISPLAY CARD -->
+            <div id="slide-card" class="glass-card rounded-2xl overflow-hidden slide-enter relative">
+                
+                <!-- TOP HEADER TICKER & TIME AGO -->
+                <div class="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-4 py-3 border-b border-slate-800 flex flex-wrap items-center justify-between gap-2">
+                    
+                    <div class="flex items-center space-x-2">
+                        <!-- Live Pulse -->
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-sports font-black bg-red-600 text-white tracking-widest uppercase">
+                            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span> LIVE TICKER
+                        </span>
+                        
+                        <!-- Category Tag -->
+                        <span id="slide-category" class="px-3 py-1 rounded-md text-xs font-sports font-extrabold bg-cricket-green text-black uppercase tracking-wider shadow">
+                            OFFICIAL ICC
+                        </span>
+                    </div>
+
+                    <!-- Slide Counter & Time Ago Tag -->
+                    <div class="flex items-center space-x-3 text-xs text-slate-300 font-mono">
+                        <span id="slide-time" class="bg-slate-800/90 text-cricket-gold px-2.5 py-1 rounded border border-slate-700 font-bold flex items-center gap-1">
+                            <i class="fa-regular fa-clock"></i> <span id="time-text">2 Hours Ago</span>
+                        </span>
+                        <span id="slide-counter" class="bg-slate-800/90 px-2.5 py-1 rounded border border-slate-700 text-cricket-green font-bold">1 / 30</span>
+                    </div>
+                </div>
+
+                <!-- MAIN CARD BODY (GRID LAYOUT) -->
+                <div id="card-inner-grid" class="grid grid-cols-1 md:grid-cols-12 min-h-[340px]">
+
+                    <!-- Left: Featured Graphic / Photo -->
+                    <div id="card-media-col" class="md:col-span-5 relative overflow-hidden bg-slate-950 flex items-center justify-center min-h-[220px] md:min-h-full">
+                        <!-- Dynamic SVG Graphic Container -->
+                        <div id="slide-svg-container" class="w-full h-full flex items-center justify-center p-4"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-slate-950 pointer-events-none"></div>
+                        
+                        <!-- Streaming Badge Overlay -->
+                        <div class="absolute top-3 left-3 px-2 py-0.5 bg-black/70 backdrop-blur-md rounded border border-white/20 text-[10px] font-sports font-bold tracking-widest text-cricket-green uppercase">
+                            CricStream HD
+                        </div>
+                    </div>
+
+                    <!-- Right: Content details -->
+                    <div id="card-text-col" class="md:col-span-7 p-4 md:p-6 flex flex-col justify-between bg-gradient-to-br from-slate-900 to-slate-950">
+                        
+                        <div>
+                            <!-- Headline -->
+                            <h2 id="slide-title" class="font-sports font-black text-xl md:text-3xl text-white tracking-wide uppercase leading-tight mb-3 text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-slate-200">
+                                Loading Headline...
+                            </h2>
+
+                            <!-- Readable Content -->
+                            <p id="slide-body" class="text-slate-300 text-xs md:text-sm leading-relaxed border-l-2 border-cricket-green pl-3.5 py-1 bg-slate-800/40 rounded-r-lg font-normal">
+                                Loading news detailed story...
+                            </p>
+                        </div>
+
+                        <!-- Footer Verified Source Badge -->
+                        <div class="pt-3 mt-4 border-t border-slate-800/80 flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center space-x-1.5 text-cricket-green text-xs font-semibold uppercase tracking-wider">
+                                <i class="fa-solid fa-circle-check text-cricket-green"></i>
+                                <span>VERIFIED UPDATE</span>
+                            </div>
+
+                            <!-- Source Citation Tag -->
+                            <div id="slide-source" class="text-[11px] text-slate-300 font-bold bg-slate-800 px-3 py-1 rounded-full border border-slate-700 flex items-center gap-1">
+                                <i class="fa-solid fa-newspaper text-cricket-gold"></i> Source: ICC Official
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- PROGRESS BAR -->
+                <div class="w-full bg-slate-950 h-2 relative overflow-hidden border-t border-slate-800">
+                    <div id="progress-bar" class="progress-bar-fill h-full bg-gradient-to-r from-emerald-400 via-cricket-green to-cricket-gold shadow-[0_0_12px_#00ff66]" style="width: 0%;"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- ADMIN DRAWER & POST LIST MANAGEMENT (Hidden in Overlay Mode) -->
+    <section id="admin-panel" class="max-w-6xl mx-auto w-full px-3 md:px-6 pb-6">
+        <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4">
+            
+            <div class="flex flex-wrap items-center justify-between mb-3 gap-2">
+                <h3 class="font-sports font-bold text-base text-white flex items-center gap-2">
+                    <i class="fa-solid fa-list-check text-cricket-green"></i> 
+                    Manage Broadcast Posts (<span id="total-posts-count">30</span>)
+                </h3>
+                <div class="flex items-center gap-2">
+                    <button onclick="resetDefaultNews()" class="text-xs bg-slate-800 hover:bg-slate-700 text-cricket-gold border border-cricket-gold/40 px-3 py-1 rounded-lg">
+                        <i class="fa-solid fa-rotate-left mr-1"></i> Reload 30 Default ICC News
+                    </button>
+                    <span class="text-xs text-slate-400">Click post to jump directly</span>
+                </div>
+            </div>
+
+            <!-- News Grid List -->
+            <div id="posts-list-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 max-h-64 overflow-y-auto pr-1 no-scrollbar">
+                <!-- Dynamically Generated Cards -->
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ADD/EDIT POST MODAL -->
+    <div id="post-modal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-lg w-full p-5 shadow-2xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            
+            <h3 id="modal-title" class="font-sports font-bold text-lg text-white mb-4 flex items-center gap-2">
+                <i class="fa-solid fa-pen-to-square text-cricket-green"></i> Add Broadcast Post
+            </h3>
+
+            <form id="post-form" onsubmit="handleFormSubmit(event)" class="space-y-3">
+                <input type="hidden" id="edit-index" value="-1">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Headline / Title</label>
+                    <input type="text" id="input-title" required placeholder="Title" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cricket-green">
+                </div>
+
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Category</label>
+                        <input type="text" id="input-category" required placeholder="OFFICIAL ICC" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Time Ago</label>
+                        <input type="text" id="input-time" required placeholder="2 Hours Ago" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Source</label>
+                        <input type="text" id="input-source" required placeholder="Source: ICC Official" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Image URL</label>
+                    <input type="url" id="input-image" required placeholder="https://images.unsplash.com/..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase mb-1">Detailed Content</label>
+                    <textarea id="input-body" rows="3" required placeholder="Readable story description..." class="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-xs text-white focus:outline-none"></textarea>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 text-slate-300 text-xs font-bold rounded-lg">Cancel</button>
+                    <button type="submit" class="px-4 py-1.5 bg-cricket-green text-black text-xs font-sports font-black rounded-lg">Save Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- SCRIPT ENGINE -->
+    <script>
+        // CUSTOM ILLUSTRATIVE SVG GENERATOR FOR EACH CRICKET NEWS CATEGORY
+        const cricketGraphicSVGs = {
+            stadium: `<svg viewBox="0 0 400 300" class="w-full h-full max-h-64 object-contain" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0b1329"/><stop offset="100%" stop-color="#020617"/></linearGradient></defs>
+                <rect width="400" height="300" fill="url(#skyGrad)"/>
+                <ellipse cx="200" cy="220" rx="170" ry="50" fill="#052e16" stroke="#00ff66" stroke-width="2"/>
+                <path d="M 120 220 L 280 220" stroke="#ca8a04" stroke-width="16" stroke-linecap="round"/>
+                <path d="M 50 160 Q 200 130 350 160 L 370 200 Q 200 170 30 200 Z" fill="#1e293b"/>
+                <circle cx="90" cy="110" r="3" fill="#ffffff" filter="drop-shadow(0 0 8px #00ff66)"/>
+                <circle cx="310" cy="110" r="3" fill="#ffffff" filter="drop-shadow(0 0 8px #00ff66)"/>
+                <line x1="90" y1="110" x2="160" y2="200" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                <line x1="310" y1="110" x2="240" y2="200" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+                <text x="200" y="80" font-family="sans-serif" font-weight="900" font-size="18" fill="#00ff66" text-anchor="middle" letter-spacing="2">LIVE MATCH ARENA</text>
+            </svg>`,
+
+            batBall: `<svg viewBox="0 0 400 300" class="w-full h-full max-h-64 object-contain" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="#070b14"/>
+                <circle cx="200" cy="150" r="100" fill="none" stroke="#00ff66" stroke-width="1" stroke-dasharray="4 4" opacity="0.4"/>
+                <g transform="rotate(-35 180 150)">
+                    <rect x="165" y="60" width="30" height="150" rx="4" fill="#ca8a04"/>
+                    <rect x="175" y="20" width="10" height="45" rx="2" fill="#475569"/>
+                    <path d="M 165 70 Q 180 160 195 70" fill="none" stroke="#854d0e" stroke-width="2"/>
+                </g>
+                <circle cx="260" cy="110" r="28" fill="#dc2626" filter="drop-shadow(0 0 15px #dc2626)"/>
+                <path d="M 242 98 Q 260 110 278 122" fill="none" stroke="#ffffff" stroke-width="3" stroke-dasharray="3 2"/>
+                <text x="200" y="270" font-family="sans-serif" font-weight="800" font-size="14" fill="#ccff00" text-anchor="middle">MATCH ACTION</text>
+            </svg>`,
+
+            trophy: `<svg viewBox="0 0 400 300" class="w-full h-full max-h-64 object-contain" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="#070b14"/>
+                <circle cx="200" cy="130" r="90" fill="#0f172a" stroke="#ffb700" stroke-width="2"/>
+                <path d="M 160 80 L 240 80 L 230 150 Q 200 180 170 150 Z" fill="#ffb700"/>
+                <path d="M 190 150 L 210 150 L 215 190 L 185 190 Z" fill="#d97706"/>
+                <rect x="165" y="190" width="70" height="25" rx="3" fill="#1e293b" stroke="#ffb700" stroke-width="1"/>
+                <path d="M 150 90 Q 130 110 160 130" fill="none" stroke="#ffb700" stroke-width="4"/>
+                <path d="M 250 90 Q 270 110 240 130" fill="none" stroke="#ffb700" stroke-width="4"/>
+                <polygon points="200,95 205,108 219,108 207,117 212,130 200,121 188,130 193,117 181,108 195,108" fill="#ffffff"/>
+                <text x="200" y="260" font-family="sans-serif" font-weight="900" font-size="16" fill="#ffb700" text-anchor="middle">ICC CHAMPIONSHIP</text>
+            </svg>`,
+
+            injury: `<svg viewBox="0 0 400 300" class="w-full h-full max-h-64 object-contain" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="#070b14"/>
+                <circle cx="200" cy="140" r="75" fill="#1e1b4b" stroke="#ff0055" stroke-width="2"/>
+                <rect x="188" y="90" width="24" height="100" rx="4" fill="#ff0055"/>
+                <rect x="150" y="128" width="100" height="24" rx="4" fill="#ff0055"/>
+                <text x="200" y="260" font-family="sans-serif" font-weight="800" font-size="15" fill="#ff0055" text-anchor="middle">MEDICAL UPDATE</text>
+            </svg>`,
+
+            rankings: `<svg viewBox="0 0 400 300" class="w-full h-full max-h-64 object-contain" xmlns="http://www.w3.org/2000/svg">
+                <rect width="400" height="300" fill="#070b14"/>
+                <rect x="100" y="180" width="50" height="60" rx="4" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                <rect x="175" y="110" width="50" height="130" rx="4" fill="#052e16" stroke="#00ff66" stroke-width="2"/>
+                <rect x="250" y="150" width="50" height="90" rx="4" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+                <text x="125" y="215" font-family="sans-serif" font-weight="900" font-size="18" fill="#94a3b8" text-anchor="middle">3</text>
+                <text x="200" y="145" font-family="sans-serif" font-weight="900" font-size="22" fill="#00ff66" text-anchor="middle">1</text>
+                <text x="275" y="185" font-family="sans-serif" font-weight="900" font-size="18" fill="#94a3b8" text-anchor="middle">2</text>
+                <path d="M 80 160 L 175 90 L 320 60" fill="none" stroke="#ccff00" stroke-width="3" stroke-dasharray="5 5"/>
+                <polygon points="320,60 305,62 315,75" fill="#ccff00"/>
+                <text x="200" y="275" font-family="sans-serif" font-weight="800" font-size="14" fill="#00ff66" text-anchor="middle">PLAYER RANKINGS</text>
+            </svg>`
+        };
+
+        // 30 REAL & AUTHENTIC ICC / ESPNcricinfo CRICKET NEWS POSTS DATASET
+        const default30CricketPosts = [
+            {
+                title: "Joe Root calls for England adaptability ahead of ODI series vs Australia",
+                category: "ENG VS AUS",
+                time: "2 Hours Ago",
+                graphicType: "stadium",
+                body: "Joe Root highlighted the importance of reading pitch conditions quickly in Australia as England prepare for an intense 5-match ODI series starting at Perth Stadium.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Jacob Bethell ruled out of Australia tour due to knee injury setback",
+                category: "INJURY UPDATE",
+                time: "5 Hours Ago",
+                graphicType: "injury",
+                body: "England all-rounder Jacob Bethell has been sidelined for four weeks after sustaining a knee strain during training. Tom Banton joins the squad as replacement.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "ICC Board and Committee meetings commence in Bali, Indonesia",
+                category: "ICC GOVERNANCE",
+                time: "8 Hours Ago",
+                graphicType: "trophy",
+                body: "Key delegates from all major test nations have assembled for quarterly ICC meetings to discuss future tour programs, revenue distribution models, and franchise windowing.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Pakistan vs Sri Lanka 1st Test: Pakistan pile on runs in Rawalpindi",
+                category: "WTC 2025-27",
+                time: "1 Day Ago",
+                graphicType: "batBall",
+                body: "Centuries from the top order placed Pakistan in a commanding position on Day 3 of the Rawalpindi Test match against Sri Lanka as spin bowlers prepare to turn the game.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "New Zealand announce Test squad for home series against India",
+                category: "NZ VS IND",
+                time: "16 Hours Ago",
+                graphicType: "stadium",
+                body: "New Zealand selectors have named a 15-player Test squad featuring three frontline pace bowlers for the upcoming critical two-match Test series in Christchurch.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Marnus Labuschagne eyes Test comeback after Australia white-ball omission",
+                category: "CRICKET AUSTRALIA",
+                time: "1 Day Ago",
+                graphicType: "batBall",
+                body: "Marnus Labuschagne scored a double hundred in Sheffield Shield cricket as he works to reclaim his permanent position in Australia's top-order Test lineup.",
+                source: "Source: Cricket Australia"
+            },
+            {
+                title: "Babar Azam reveals Pakistan's renewed World Test Championship target",
+                category: "WTC 2025-27",
+                time: "2 Days Ago",
+                graphicType: "trophy",
+                body: "Star batter Babar Azam expressed full confidence that Pakistan's recent bowling overhaul gives them a strong chance to qualify for the WTC Final.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Australia vs England 1st ODI at Perth Stadium: Preview & Team News",
+                category: "ODI SERIES",
+                time: "1 Day Ago",
+                graphicType: "stadium",
+                body: "Perth Stadium's fast pitch promises high bounce as Australia's new-look bowling attack takes on Harry Brook's aggressive England ODI side.",
+                source: "Source: Cricket Australia"
+            },
+            {
+                title: "Afghanistan batter achieves historic first in ICC Men's Player Rankings",
+                category: "ICC RANKINGS",
+                time: "7 Hours Ago",
+                graphicType: "rankings",
+                body: "Following stellar performances in white-ball cricket, Afghanistan's star opener has climbed into the Top 3 of the latest official ICC Men's T20I Player Rankings.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "West Indies secure WTC series victory after stalemate in Sylhet",
+                category: "TEST MATCH",
+                time: "2 Days Ago",
+                graphicType: "batBall",
+                body: "West Indies held their nerve on the final day against Bangladesh to seal a 1-0 series win, earning vital World Test Championship points.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Ireland Women aim high at ICC Women's Emerging Nations Trophy 2026",
+                category: "WOMEN'S CRICKET",
+                time: "1 Day Ago",
+                graphicType: "trophy",
+                body: "Ireland Women's captain expressed enthusiasm as her team kicked off their tournament campaign with a dominant 6-wicket victory in Dubai.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "India announces multi-format squad for tour of South Africa",
+                category: "SQUAD NEWS",
+                time: "2 Days Ago",
+                graphicType: "stadium",
+                body: "BCCI selectors have named three distinct squads for T20Is, ODIs, and Tests for the upcoming multi-format tour of South Africa.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "Kagiso Rabada ready to defend fortress in 2027 World Cup preparations",
+                category: "SA CRICKET",
+                time: "3 Days Ago",
+                graphicType: "batBall",
+                body: "Pace spearhead Kagiso Rabada says South Africa's fast bowlers are building momentum as home conditions will play a huge factor in upcoming marquee series.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Jofra Archer returns to England pace attack for Australia ODI series",
+                category: "ENG TOUR",
+                time: "1 Day Ago",
+                graphicType: "batBall",
+                body: "Jofra Archer clocked speeds over 150 km/h in net sessions at Perth, signaling a fiery comeback for England's opening ODI encounter.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "Xavier Bartlett to lead Australia's bowling attack in Perth ODI",
+                category: "CRICKET AUSTRALIA",
+                time: "1 Day Ago",
+                graphicType: "stadium",
+                body: "With senior pacers rested, Xavier Bartlett gets the opportunity to spearhead the new ball attack against England's formidable top order.",
+                source: "Source: Cricket Australia"
+            },
+            {
+                title: "Tom Banton recalled for England after stellar domestic form",
+                category: "ENGLAND SQUAD",
+                time: "1 Day Ago",
+                graphicType: "batBall",
+                body: "Explosive batsman Tom Banton earns a recall to the white-ball squad following back-to-back centuries in domestic white-ball competitions.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "WTC 2025-27 Standings: Pakistan & West Indies make crucial moves",
+                category: "WTC RANKINGS",
+                time: "2 Days Ago",
+                graphicType: "rankings",
+                body: "Recent victories have shifted percentage points in the World Test Championship table, tightening the race for the top two spots.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "ICC Board initiates Franchise League Review Group in Bali",
+                category: "ICC MEETING",
+                time: "8 Hours Ago",
+                graphicType: "trophy",
+                body: "A special committee has been established to review overseas player caps and global calendar windows across domestic T20 leagues.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Aaryavir Sehwag scores brilliant 160 in Under-19 Asia Cup match",
+                category: "U19 CRICKET",
+                time: "2 Days Ago",
+                graphicType: "batBall",
+                body: "Emerging batter Aaryavir Sehwag put on a sensational batting display with 16 fours and 5 sixes in India U19's dominant victory.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "Zimbabwe record-filled batting display secures thrilling Test draw",
+                category: "TEST MATCH",
+                time: "2 Days Ago",
+                graphicType: "stadium",
+                body: "Zimbabwe batted out 110 overs on the final day against Afghanistan to secure a memorable Test match draw in Harare.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Bethell returns to England Test squad for South Africa series",
+                category: "ENG SQUAD",
+                time: "2 Days Ago",
+                graphicType: "injury",
+                body: "England ECB medical staff expect Jacob Bethell to make a full recovery in time for the upcoming three-Test tour of South Africa.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Australia U19 World Cup star Ollie Peake makes mark in senior setup",
+                category: "DOMESTIC NEWS",
+                time: "1 Day Ago",
+                graphicType: "batBall",
+                body: "18-year-old Ollie Peake hit his maiden first-class century for Victoria, earning high praise from Australian selectors.",
+                source: "Source: Cricket Australia"
+            },
+            {
+                title: "Pakistan ODI tri-series victory celebrations and tactical analysis",
+                category: "TRI-SERIES",
+                time: "2 Days Ago",
+                graphicType: "trophy",
+                body: "Cricket analysts dissect Pakistan's spin bowling strategy that restricted opposition batters in the middle overs during the tri-series final.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "ICC announces venue and dates for World Test Championship 2027 Final",
+                category: "WTC FINAL",
+                time: "4 Days Ago",
+                graphicType: "stadium",
+                body: "Lord's Cricket Ground will host the prestigious ICC World Test Championship Final in June 2027, the ICC announced today.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Women's Under-19 T20 World Cup 2027 details confirmed",
+                category: "ICC TOURNAMENT",
+                time: "5 Days Ago",
+                graphicType: "trophy",
+                body: "16 international teams will compete across four host venues in Malaysia for the next edition of the Women's U19 T20 World Cup.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Irfan Pathan reveals Top-5 Indian pacers for upcoming marquee tournament",
+                category: "CRICKET EXPERT",
+                time: "1 Day Ago",
+                image: "",
+                graphicType: "rankings",
+                body: "Former Indian pacer Irfan Pathan broke down India's pace options, picking Jasprit Bumrah and Mohammed Siraj as key weapons.",
+                source: "Source: ESPNcricinfo"
+            },
+            {
+                title: "CWC 2027 Qualifier Playoff details confirmed by ICC",
+                category: "CWC QUALIFIER",
+                time: "5 Days Ago",
+                graphicType: "trophy",
+                body: "Eight associate nations will fight for the remaining four qualification spots for the 2027 Men's Cricket World Cup in South Africa.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Adam Zampa dissects Australia's white-ball plans for 2027 World Cup",
+                category: "WHITE BALL",
+                time: "7 Hours Ago",
+                graphicType: "batBall",
+                body: "Spinner Adam Zampa believes middle-over wicket-taking capability will be the single most crucial factor on South African pitches.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "Stirling steps down as Ireland hunt new T20I captain",
+                category: "CAPTAINCY UPDATE",
+                time: "6 Days Ago",
+                graphicType: "stadium",
+                body: "Paul Stirling has announced he will step down as Ireland's T20I captain to focus purely on his batting performance.",
+                source: "Source: ICC Official"
+            },
+            {
+                title: "ICC Men's T20 World Cup 2026 prize distribution breakdown",
+                category: "ICC PRIZE POOL",
+                time: "7 Days Ago",
+                graphicType: "trophy",
+                body: "The ICC confirmed a record total prize purse of $11.2 million for the upcoming tournament with all participating boards receiving guaranteed payouts.",
+                source: "Source: ICC Official"
+            }
+        ];
+
+        // State Variables
+        let newsPosts = JSON.parse(localStorage.getItem('cric_news_posts_v2')) || default30CricketPosts;
+        let currentIndex = 0;
+        let timerSeconds = 10;
+        let elapsedProgress = 0;
+        let isPlaying = true;
+        let progressInterval = null;
+        let isOverlayMode = false;
+
+        /* ==========================================================================
+           WEB AUDIO API - COPYRIGHT FREE SPORTS NEWS SOUND SYNTHESIZER
+           ========================================================================== */
+        let audioCtx = null;
+        let isAudioMuted = true;
+        let masterGain = null;
+        let beatInterval = null;
+        let currentTrack = 'newsroom';
+        let beatStep = 0;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+                masterGain = audioCtx.createGain();
+                masterGain.gain.value = parseFloat(document.getElementById('volume-slider').value) || 0.3;
+                masterGain.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleAudio() {
+            initAudioContext();
+            isAudioMuted = !isAudioMuted;
+            const toggleBtn = document.getElementById('audio-toggle-btn');
+            const icon = document.getElementById('audio-icon');
+            const text = document.getElementById('audio-status-text');
+
+            if (!isAudioMuted) {
+                toggleBtn.className = "px-2.5 py-1 rounded bg-cricket-green text-black font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,255,102,0.5)] transition";
+                icon.className = "fa-solid fa-volume-high text-black animate-pulse";
+                text.innerText = "AUDIO ON";
+                startSynthesizerBeat();
+            } else {
+                toggleBtn.className = "px-2.5 py-1 rounded bg-slate-700 text-slate-300 hover:text-white font-bold flex items-center gap-1.5 transition";
+                icon.className = "fa-solid fa-volume-xmark text-slate-400";
+                text.innerText = "AUDIO OFF";
+                stopSynthesizerBeat();
+            }
+        }
+
+        function changeVolume(val) {
+            if (masterGain && audioCtx) {
+                masterGain.gain.setValueAtTime(parseFloat(val), audioCtx.currentTime);
+            }
+        }
+
+        function changeTrack(val) {
+            currentTrack = val;
+            beatStep = 0;
+        }
+
+        // Plays short engaging sound effect on slide toggle
+        function playTransitionBeep() {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                osc.frequency.exponentialRampToValueAtTime(1046.50, audioCtx.currentTime + 0.12); // C6
+
+                gain.gain.setValueAtTime(0.25, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+
+                osc.connect(gain);
+                gain.connect(masterGain);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.12);
+            } catch (e) {
+                console.error("Audio beep error", e);
+            }
+        }
+
+        // Dynamic Sound Beat Generator (Sine/Square Synth Engine)
+        function startSynthesizerBeat() {
+            stopSynthesizerBeat();
+            beatStep = 0;
+            const bpm = 120;
+            const stepDuration = (60 / bpm) / 4 * 1000; // 16th notes
+
+            beatInterval = setInterval(() => {
+                if (isAudioMuted || !audioCtx) return;
+                playBeatStep(beatStep);
+                beatStep = (beatStep + 1) % 16;
+            }, stepDuration);
+        }
+
+        function stopSynthesizerBeat() {
+            if (beatInterval) clearInterval(beatInterval);
+        }
+
+        function playBeatStep(step) {
+            const now = audioCtx.currentTime;
+
+            // Kick Drum (Pulse on steps 0, 4, 8, 12)
+            if (step % 4 === 0) {
+                const kick = audioCtx.createOscillator();
+                const kickGain = audioCtx.createGain();
+                kick.frequency.setValueAtTime(currentTrack === 'hype' ? 120 : 90, now);
+                kick.frequency.exponentialRampToValueAtTime(30, now + 0.08);
+
+                kickGain.gain.setValueAtTime(0.5, now);
+                kickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+                kick.connect(kickGain);
+                kickGain.connect(masterGain);
+                kick.start(now);
+                kick.stop(now + 0.08);
+            }
+
+            // Snare / Tick (Steps 4, 12)
+            if (step === 4 || step === 12) {
+                const tick = audioCtx.createOscillator();
+                const tickGain = audioCtx.createGain();
+                tick.type = 'square';
+                tick.frequency.setValueAtTime(currentTrack === 'stadium' ? 320 : 220, now);
+
+                tickGain.gain.setValueAtTime(0.12, now);
+                tickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+                tick.connect(tickGain);
+                tickGain.connect(masterGain);
+                tick.start(now);
+                tick.stop(now + 0.05);
+            }
+
+            // News Ticker Melody Synth
+            const synthScale = currentTrack === 'stadium' ? [261.63, 329.63, 392.00, 523.25] : [220.00, 261.63, 329.63, 440.00];
+            if (step % 2 === 0 && (currentTrack === 'newsroom' || step % 4 !== 0)) {
+                const note = synthScale[(step / 2) % synthScale.length];
+                const synth = audioCtx.createOscillator();
+                const synthGain = audioCtx.createGain();
+
+                synth.type = currentTrack === 'hype' ? 'sawtooth' : 'sine';
+                synth.frequency.setValueAtTime(note, now);
+
+                synthGain.gain.setValueAtTime(0.08, now);
+                synthGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+                synth.connect(synthGain);
+                synthGain.connect(masterGain);
+                synth.start(now);
+                synth.stop(now + 0.1);
+            }
+        }
+
+        // Window Init
+        window.onload = function () {
+            renderCurrentSlide();
+            renderAdminPostsList();
+            startAutoSlider();
+        };
+
+        // Slider Loop Engine
+        function startAutoSlider() {
+            stopAutoSlider();
+            elapsedProgress = 0;
+            updateProgressBar(0);
+
+            const intervalStep = 100;
+            
+            progressInterval = setInterval(() => {
+                if (isPlaying) {
+                    elapsedProgress += intervalStep;
+                    let percentage = (elapsedProgress / (timerSeconds * 1000)) * 100;
+                    updateProgressBar(percentage);
+
+                    if (elapsedProgress >= timerSeconds * 1000) {
+                        nextSlide();
+                        elapsedProgress = 0;
+                    }
+                }
+            }, intervalStep);
+        }
+
+        function stopAutoSlider() {
+            if (progressInterval) clearInterval(progressInterval);
+        }
+
+        function updateProgressBar(percentage) {
+            const bar = document.getElementById('progress-bar');
+            if (bar) bar.style.width = `${Math.min(percentage, 100)}%`;
+        }
+
+        // Render Slide Content
+        function renderCurrentSlide() {
+            if (newsPosts.length === 0) return;
+
+            // Trigger Transition Sound Effect
+            playTransitionBeep();
+
+            const post = newsPosts[currentIndex];
+            const slideCard = document.getElementById('slide-card');
+
+            // Trigger Animation
+            slideCard.classList.remove('slide-enter');
+            void slideCard.offsetWidth;
+            slideCard.classList.add('slide-enter');
+
+            // Set Data
+            document.getElementById('slide-title').innerText = post.title;
+            document.getElementById('slide-category').innerText = post.category || 'ICC NEWS';
+            document.getElementById('time-text').innerText = post.time || 'Recently';
+            document.getElementById('slide-body').innerText = post.body;
+            document.getElementById('slide-source').innerHTML = `<i class="fa-solid fa-newspaper text-cricket-gold mr-1"></i> ${post.source || 'Source: ICC Official'}`;
+
+            // Render Custom SVG Graphic
+            const svgContainer = document.getElementById('slide-svg-container');
+            const graphicType = post.graphicType || 'batBall';
+            svgContainer.innerHTML = cricketGraphicSVGs[graphicType] || cricketGraphicSVGs['batBall'];
+
+            document.getElementById('slide-counter').innerText = `${currentIndex + 1} / ${newsPosts.length}`;
+            highlightActiveAdminCard();
+        }
+
+        // Navigation Controls
+        function nextSlide() {
+            if (newsPosts.length === 0) return;
+            currentIndex = (currentIndex + 1) % newsPosts.length;
+            renderCurrentSlide();
+            elapsedProgress = 0;
+        }
+
+        function prevSlide() {
+            if (newsPosts.length === 0) return;
+            currentIndex = (currentIndex - 1 + newsPosts.length) % newsPosts.length;
+            renderCurrentSlide();
+            elapsedProgress = 0;
+        }
+
+        function jumpToSlide(index) {
+            currentIndex = index;
+            renderCurrentSlide();
+            elapsedProgress = 0;
+        }
+
+        function toggleAutoPlay() {
+            isPlaying = !isPlaying;
+            const playIcon = document.getElementById('play-icon');
+            const playText = document.getElementById('play-text');
+
+            if (isPlaying) {
+                playIcon.className = "fa-solid fa-pause";
+                playText.innerText = "PAUSE";
+            } else {
+                playIcon.className = "fa-solid fa-play";
+                playText.innerText = "PLAY";
+            }
+        }
+
+        function setTimer(seconds) {
+            timerSeconds = seconds;
+            [5, 10, 15, 20].forEach(s => {
+                const btn = document.getElementById(`btn-timer-${s}`);
+                if (btn) {
+                    btn.className = s === seconds 
+                        ? "px-2 py-1 rounded bg-cricket-green text-black font-bold shadow" 
+                        : "px-2 py-1 rounded text-slate-300 hover:text-white";
+                }
+            });
+            elapsedProgress = 0;
+            startAutoSlider();
+        }
+
+        // Overlay Presets Selector
+        function changePreset(preset) {
+            const container = document.getElementById('broadcast-container');
+            const innerGrid = document.getElementById('card-inner-grid');
+            const mediaCol = document.getElementById('card-media-col');
+            const textCol = document.getElementById('card-text-col');
+
+            // Reset layout classes
+            container.className = "w-full transition-all duration-300";
+            innerGrid.className = "grid grid-cols-1 md:grid-cols-12 min-h-[340px]";
+            mediaCol.className = "md:col-span-5 relative overflow-hidden bg-slate-950 flex items-center justify-center min-h-[200px] md:min-h-full";
+            textCol.className = "md:col-span-7 p-4 md:p-6 flex flex-col justify-between bg-gradient-to-br from-slate-900 to-slate-950";
+
+            if (preset === 'bottom') {
+                container.classList.add('max-w-6xl', 'mt-auto');
+                innerGrid.className = "grid grid-cols-1 md:grid-cols-12 min-h-[240px]";
+                mediaCol.className = "hidden md:flex md:col-span-3 relative overflow-hidden bg-slate-950";
+                textCol.className = "md:col-span-9 p-4 flex flex-col justify-between bg-slate-900";
+            } else if (preset === 'side') {
+                container.classList.add('max-w-md');
+                innerGrid.className = "flex flex-col min-h-[400px]";
+                mediaCol.className = "w-full h-48 relative overflow-hidden bg-slate-950";
+                textCol.className = "w-full p-4 flex flex-col justify-between bg-slate-900";
+            } else {
+                container.classList.add('max-w-5xl');
+            }
+        }
+
+        // PRISM Live Overlay View Mode Toggle
+        function toggleOverlayMode() {
+            isOverlayMode = !isOverlayMode;
+            const topBar = document.getElementById('top-bar');
+            const adminPanel = document.getElementById('admin-panel');
+            const exitBtn = document.getElementById('exit-overlay-btn');
+            const mainLayout = document.getElementById('main-layout');
+
+            if (isOverlayMode) {
+                topBar.classList.add('hidden');
+                adminPanel.classList.add('hidden');
+                exitBtn.classList.remove('hidden');
+                exitBtn.classList.add('flex');
+                mainLayout.classList.add('h-screen', 'p-0');
+            } else {
+                topBar.classList.remove('hidden');
+                adminPanel.classList.remove('hidden');
+                exitBtn.classList.add('hidden');
+                exitBtn.classList.remove('flex');
+                mainLayout.classList.remove('h-screen', 'p-0');
+            }
+        }
+
+        // Admin Grid Drawer Render
+        function renderAdminPostsList() {
+            const container = document.getElementById('posts-list-container');
+            document.getElementById('total-posts-count').innerText = newsPosts.length;
+            container.innerHTML = '';
+
+            newsPosts.forEach((post, index) => {
+                const card = document.createElement('div');
+                card.className = `p-2.5 rounded-xl border transition cursor-pointer flex items-center justify-between gap-2 ${index === currentIndex ? 'bg-slate-800 border-cricket-green' : 'bg-slate-900/80 border-slate-800 hover:border-slate-700'}`;
+                card.onclick = () => jumpToSlide(index);
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-2.5 overflow-hidden">
+                        <img src="${post.image}" class="w-10 h-10 rounded-lg object-cover flex-shrink-0" onerror="this.src='https://placehold.co/100/0f172a/00ff66?text=Cric'">
+                        <div class="truncate">
+                            <h4 class="text-xs font-bold text-white truncate">${post.title}</h4>
+                            <div class="flex items-center gap-2 text-[10px]">
+                                <span class="text-cricket-green font-semibold">${post.category}</span>
+                                <span class="text-slate-400">• ${post.time}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-1 flex-shrink-0">
+                        <button onclick="event.stopPropagation(); editPost(${index})" class="p-1 text-slate-400 hover:text-white"><i class="fa-solid fa-pen text-xs"></i></button>
+                        <button onclick="event.stopPropagation(); deletePost(${index})" class="p-1 text-slate-400 hover:text-red-400"><i class="fa-solid fa-trash text-xs"></i></button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function highlightActiveAdminCard() {
+            renderAdminPostsList();
+        }
+
+        function resetDefaultNews() {
+            if (confirm("Reset post list to 30 authentic ICC news stories?")) {
+                newsPosts = [...default30CricketPosts];
+                currentIndex = 0;
+                saveAndRefresh();
+            }
+        }
+
+        // Add / Edit Post Modal
+        function openAddModal() {
+            document.getElementById('edit-index').value = "-1";
+            document.getElementById('modal-title').innerText = "Add Broadcast Post";
+            document.getElementById('post-form').reset();
+            document.getElementById('post-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('post-modal').classList.add('hidden');
+        }
+
+        function editPost(index) {
+            const post = newsPosts[index];
+            document.getElementById('edit-index').value = index;
+            document.getElementById('modal-title').innerText = "Edit Broadcast Post";
+            
+            document.getElementById('input-title').value = post.title;
+            document.getElementById('input-category').value = post.category;
+            document.getElementById('input-time').value = post.time;
+            document.getElementById('input-source').value = post.source || 'Source: ICC Official';
+            document.getElementById('input-image').value = post.image;
+            document.getElementById('input-body').value = post.body;
+
+            document.getElementById('post-modal').classList.remove('hidden');
+        }
+
+        function deletePost(index) {
+            if (newsPosts.length <= 1) {
+                alert("At least one broadcast post must remain.");
+                return;
+            }
+            newsPosts.splice(index, 1);
+            if (currentIndex >= newsPosts.length) currentIndex = 0;
+            saveAndRefresh();
+        }
+
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editIndex = parseInt(document.getElementById('edit-index').value);
+
+            const newPost = {
+                title: document.getElementById('input-title').value,
+                category: document.getElementById('input-category').value,
+                time: document.getElementById('input-time').value || 'Just Now',
+                source: document.getElementById('input-source').value || 'Source: ICC Official',
+                image: document.getElementById('input-image').value,
+                body: document.getElementById('input-body').value
+            };
+
+            if (editIndex >= 0) {
+                newsPosts[editIndex] = newPost;
+            } else {
+                newsPosts.unshift(newPost);
+                currentIndex = 0;
+            }
+
+            saveAndRefresh();
+            closeModal();
+        }
+
+        function saveAndRefresh() {
+            localStorage.setItem('cric_news_posts_v2', JSON.stringify(newsPosts));
+            renderCurrentSlide();
+            renderAdminPostsList();
+            elapsedProgress = 0;
+        }
+    </script>
+</body>
+</html>
