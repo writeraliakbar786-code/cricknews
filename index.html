@@ -79,93 +79,6 @@
 <body class="min-h-screen flex flex-col justify-between overflow-x-hidden font-sans">
 
     <!-- TOP CONTROL BAR (Hidden in Overlay Mode) -->
-    <header id="top-bar" class="w-full bg-slate-900/95 border-b border-slate-800 p-3 md:p-4 sticky top-0 z-50 transition-all duration-300">
-        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-            
-            <!-- Branding -->
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-cricket-green text-black flex items-center justify-center font-sports font-black text-xl shadow-[0_0_15px_rgba(0,255,102,0.6)]">
-                    <i class="fa-solid fa-satellite-dish"></i>
-                </div>
-                <div>
-                    <h1 class="font-sports font-black text-base md:text-lg tracking-wider text-white uppercase flex items-center gap-2">
-                        CRIC-STREAM <span class="text-cricket-green">OVERLAY STUDIO</span>
-                    </h1>
-                    <p class="text-[11px] text-slate-400">Prism Live / OBS Broadcast News Ticker Engine (30+ Verified ICC News)</p>
-                </div>
-            </div>
-
-            <!-- Header Controls -->
-            <div class="flex flex-wrap items-center gap-2 md:gap-3">
-                
-                <!-- Audio Engine Controls -->
-                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs gap-1.5">
-                    <button id="audio-toggle-btn" onclick="toggleAudio()" class="px-2.5 py-1 rounded bg-slate-700 text-slate-300 hover:text-white font-bold flex items-center gap-1.5 transition">
-                        <i id="audio-icon" class="fa-solid fa-volume-xmark text-slate-400"></i>
-                        <span id="audio-status-text">AUDIO OFF</span>
-                    </button>
-                    
-                    <div class="hidden sm:flex items-center gap-1 px-1">
-                        <i class="fa-solid fa-sliders text-slate-400 text-[10px]"></i>
-                        <input type="range" id="volume-slider" min="0" max="1" step="0.05" value="0.3" oninput="changeVolume(this.value)" class="w-16 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cricket-green">
-                    </div>
-
-                    <select id="track-select" onchange="changeTrack(this.value)" class="bg-slate-900 text-cricket-green text-[11px] font-bold rounded px-1.5 py-1 border border-slate-700 focus:outline-none">
-                        <option value="newsroom">Newsroom Beat</option>
-                        <option value="stadium">Stadium Pulse</option>
-                        <option value="hype">Hype Ticker</option>
-                    </select>
-                </div>
-
-                <!-- Speed Timer Selector -->
-                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs">
-                    <span class="px-2 text-slate-400 font-semibold"><i class="fa-solid fa-stopwatch mr-1"></i> Timer:</span>
-                    <button onclick="setTimer(5)" id="btn-timer-5" class="px-2 py-1 rounded text-slate-300">5s</button>
-                    <button onclick="setTimer(10)" id="btn-timer-10" class="px-2 py-1 rounded bg-cricket-green text-black font-bold shadow">10s</button>
-                    <button onclick="setTimer(15)" id="btn-timer-15" class="px-2 py-1 rounded text-slate-300">15s</button>
-                    <button onclick="setTimer(20)" id="btn-timer-20" class="px-2 py-1 rounded text-slate-300">20s</button>
-                </div>
-
-                <!-- Overlay Layout Style Preset Selector -->
-                <div class="flex items-center bg-slate-800/90 rounded-lg p-1 border border-slate-700 text-xs">
-                    <span class="px-2 text-slate-400 font-semibold"><i class="fa-solid fa-box mr-1"></i> Style:</span>
-                    <select id="preset-select" onchange="changePreset(this.value)" class="bg-slate-900 text-cricket-green font-bold rounded px-2 py-1 border border-slate-700 focus:outline-none">
-                        <option value="center">Central Card</option>
-                        <option value="bottom">Bottom Third Banner</option>
-                        <option value="side">Side Stream Overlay</option>
-                    </select>
-                </div>
-
-                <!-- Play / Pause -->
-                <button id="play-pause-btn" onclick="toggleAutoPlay()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-cricket-green font-bold text-xs rounded-lg border border-cricket-green/30 flex items-center gap-1.5">
-                    <i id="play-icon" class="fa-solid fa-pause"></i>
-                    <span id="play-text">PAUSE</span>
-                </button>
-
-                <!-- Next / Prev -->
-                <div class="flex items-center space-x-1">
-                    <button onclick="prevSlide()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700" title="Previous">
-                        <i class="fa-solid fa-chevron-left text-xs"></i>
-                    </button>
-                    <button onclick="nextSlide()" class="p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg border border-slate-700" title="Next">
-                        <i class="fa-solid fa-chevron-right text-xs"></i>
-                    </button>
-                </div>
-
-                <!-- Add Post Button -->
-                <button onclick="openAddModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-lg border border-slate-700 flex items-center gap-1">
-                    <i class="fa-solid fa-plus text-cricket-green"></i> Add Post
-                </button>
-
-                <!-- Full Overlay Mode Button -->
-                <button onclick="toggleOverlayMode()" class="px-4 py-2 bg-gradient-to-r from-cricket-green to-emerald-400 hover:brightness-110 text-black font-sports font-black text-xs tracking-wider rounded-lg shadow-[0_0_15px_rgba(0,255,102,0.4)] flex items-center gap-2 uppercase">
-                    <i class="fa-solid fa-expand"></i> PRISM Overlay Mode
-                </button>
-
-            </div>
-
-        </div>
-    </header>
 
     <!-- EXIT OVERLAY BUTTON (Floating when in Overlay Mode) -->
     <button id="exit-overlay-btn" onclick="toggleOverlayMode()" class="hidden fixed top-4 right-4 z-50 bg-slate-900/95 text-cricket-green border-2 border-cricket-green px-4 py-2 rounded-full font-bold text-xs shadow-2xl hover:bg-slate-800 items-center gap-2">
@@ -173,7 +86,7 @@
     </button>
 
     <!-- MAIN OVERLAY DISPLAY CONTAINER -->
-    <main id="main-layout" class="flex-grow flex items-center justify-center p-2 md:p-6 relative w-full transition-all duration-300">
+    <main id="main-layout" class="flex-grow flex items-center justify-center p-6 md:p-6 relative w-full transition-all duration-300 mt-6 mb-6 ">
 
         <div id="broadcast-container" class="w-full max-w-5xl transition-all duration-300">
 
